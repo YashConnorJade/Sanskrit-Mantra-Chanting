@@ -1268,7 +1268,7 @@
 
           <div class="counter-area" id="counterArea" hidden>
             <div class="counter-meta">
-              <span>Manual counter · changes only when you press an arrow</span>
+              <span id="counterInstructions">Keyboard: arrows or Numpad 2/4/6/8 · one step per press</span>
               <strong id="counterStatus">In progress</strong>
             </div>
 
@@ -1277,7 +1277,7 @@
                 <span class="chevron left" aria-hidden="true"></span>
               </button>
               <div class="count-readout">
-                <output class="count-value" id="countValue" role="spinbutton" aria-live="polite" aria-readonly="true" aria-valuemin="0" aria-valuemax="11" aria-valuenow="0">0</output>
+                <output class="count-value" id="countValue" role="spinbutton" tabindex="0" aria-live="polite" aria-describedby="counterInstructions" aria-valuemin="0" aria-valuemax="11" aria-valuenow="0">0</output>
                 <span class="count-limit">of <strong id="countLimit">11</strong></span>
               </div>
               <button class="counter-button" id="incrementButton" type="button" aria-label="Increase count by one">
@@ -1701,6 +1701,64 @@
         }
       }
 
+      function isTextEntryElement(element) {
+        var tagName;
+        if (!element) {
+          return false;
+        }
+        tagName = element.tagName ? element.tagName.toLowerCase() : "";
+        return Boolean(
+          element.isContentEditable ||
+          tagName === "input" ||
+          tagName === "textarea" ||
+          tagName === "select"
+        );
+      }
+
+      function counterDirectionForKey(event) {
+        if (event.code === "Numpad2" || event.code === "Numpad4") {
+          return -1;
+        }
+        if (event.code === "Numpad6" || event.code === "Numpad8") {
+          return 1;
+        }
+        if (event.key === "ArrowLeft" || event.key === "ArrowDown") {
+          return -1;
+        }
+        if (event.key === "ArrowRight" || event.key === "ArrowUp") {
+          return 1;
+        }
+        return 0;
+      }
+
+      function handleCounterKeydown(event) {
+        var mantra;
+        var direction;
+
+        if (
+          event.defaultPrevented ||
+          event.repeat ||
+          event.altKey ||
+          event.ctrlKey ||
+          event.metaKey ||
+          isTextEntryElement(event.target) ||
+          !refs.mantraModal.hidden ||
+          !refs.deleteModal.hidden
+        ) {
+          return false;
+        }
+
+        mantra = getActiveMantra();
+        direction = counterDirectionForKey(event);
+        if (!direction || !mantra || !isValidTarget(mantra.target) || refs.counterArea.hidden) {
+          return false;
+        }
+
+        event.preventDefault();
+        stepCount(direction);
+        return true;
+      }
+
       function resetCount() {
         var mantra = getActiveMantra();
         if (!mantra || !isValidTarget(mantra.target)) {
@@ -1916,6 +1974,9 @@
       });
 
       document.addEventListener("keydown", function (event) {
+        if (handleCounterKeydown(event)) {
+          return;
+        }
         if (event.key === "Escape") {
           if (!closeTopModal()) {
             closeSidebar();
