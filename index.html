@@ -1403,8 +1403,10 @@
         toast: document.getElementById("toast")
       };
 
+      var systemThemeQuery = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+
       function getPreferredTheme() {
-        if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+        if (systemThemeQuery && systemThemeQuery.matches) {
           return "dark";
         }
         return "light";
@@ -1413,6 +1415,7 @@
       function freshState() {
         return {
           theme: getPreferredTheme(),
+          followSystemTheme: true,
           activeId: null,
           mantras: []
         };
@@ -1435,6 +1438,7 @@
         }
 
         next.theme = raw.theme === "dark" ? "dark" : raw.theme === "light" ? "light" : next.theme;
+        next.followSystemTheme = raw.followSystemTheme === false ? false : true;
         list = Array.isArray(raw.mantras) ? raw.mantras : [];
 
         next.mantras = list.reduce(function (result, item) {
@@ -1520,9 +1524,14 @@
         return findMantraIn(state.mantras, state.activeId);
       }
 
+      function getAppliedTheme() {
+        return state.followSystemTheme ? getPreferredTheme() : state.theme;
+      }
+
       function applyTheme() {
-        var dark = state.theme === "dark";
-        refs.html.setAttribute("data-theme", state.theme);
+        var appliedTheme = getAppliedTheme();
+        var dark = appliedTheme === "dark";
+        refs.html.setAttribute("data-theme", appliedTheme);
         refs.themeIcon.textContent = dark ? "☼" : "☾";
         refs.themeLabel.textContent = dark ? "Light mode" : "Dark mode";
         refs.themeToggle.setAttribute("aria-label", dark ? "Switch to light mode" : "Switch to dark mode");
@@ -1933,10 +1942,27 @@
       }
 
       refs.themeToggle.addEventListener("click", function () {
-        state.theme = state.theme === "dark" ? "light" : "dark";
+        state.theme = getAppliedTheme() === "dark" ? "light" : "dark";
+        state.followSystemTheme = false;
         saveState();
         applyTheme();
       });
+
+      if (systemThemeQuery) {
+        if (typeof systemThemeQuery.addEventListener === "function") {
+          systemThemeQuery.addEventListener("change", function () {
+            if (state.followSystemTheme) {
+              applyTheme();
+            }
+          });
+        } else if (typeof systemThemeQuery.addListener === "function") {
+          systemThemeQuery.addListener(function () {
+            if (state.followSystemTheme) {
+              applyTheme();
+            }
+          });
+        }
+      }
 
       refs.addMantraButton.addEventListener("click", function () { openMantraModal(null); });
       refs.emptyAddButton.addEventListener("click", function () { openMantraModal(null); });
