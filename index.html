@@ -706,16 +706,20 @@
     .counter-meta {
       display: flex;
       align-items: center;
-      justify-content: space-between;
       gap: 16px;
       margin-bottom: 12px;
       color: var(--muted);
       font-size: 13px;
     }
 
-    .counter-meta strong {
+    .counter-status {
+      display: block;
+      min-height: 20px;
+      margin-top: 13px;
       color: var(--accent);
+      font-size: 14px;
       font-weight: 850;
+      text-align: center;
     }
 
     .counter-shell {
@@ -1281,7 +1285,6 @@
           <div class="counter-area" id="counterArea" hidden>
             <div class="counter-meta">
               <span id="counterInstructions">Keyboard: arrows or Numpad 2/4/6/8 · one step per press</span>
-              <strong id="counterStatus">In progress</strong>
             </div>
 
             <div class="counter-shell" role="group" aria-label="Manual mantra repetition counter">
@@ -1298,6 +1301,8 @@
             </div>
 
             <progress class="progress-track" id="progressTrack" aria-label="Chanting progress" value="0" max="11">0 of 11</progress>
+
+            <strong class="counter-status" id="counterStatus" role="status" aria-live="polite">Ready</strong>
 
             <div class="counter-actions">
               <button class="secondary-button" id="resetButton" type="button">Reset to 0</button>
@@ -1455,6 +1460,8 @@
           var text;
           var target;
           var count;
+          var completedSets;
+          var currentSetComplete;
           if (!item || typeof item !== "object") {
             return result;
           }
@@ -1469,12 +1476,27 @@
           } else {
             count = 0;
           }
+          completedSets = Math.max(0, Math.floor(Number(item.completedSets) || 0));
+          currentSetComplete = Boolean(item.currentSetComplete);
+          if (
+            target !== null &&
+            count >= target &&
+            !Object.prototype.hasOwnProperty.call(item, "completedSets")
+          ) {
+            completedSets = 1;
+            currentSetComplete = true;
+          }
+          if (currentSetComplete && completedSets < 1) {
+            completedSets = 1;
+          }
           result.push({
             id: safeText(item.id) || makeId(),
             name: safeText(item.name).trim() || deriveName(text),
             text: text,
             target: target,
             count: count,
+            completedSets: completedSets,
+            currentSetComplete: currentSetComplete,
             createdAt: Number(item.createdAt) || Date.now(),
             updatedAt: Number(item.updatedAt) || Date.now(),
             lastUsedAt: Number(item.lastUsedAt) || 0
@@ -1694,7 +1716,9 @@
         refs.progressTrack.textContent = count + " of " + target;
         refs.decrementButton.disabled = count <= 0;
         refs.incrementButton.disabled = count >= target;
-        refs.counterStatus.textContent = count >= target ? "Set complete" : count === 0 ? "Ready" : "In progress";
+        refs.counterStatus.textContent = mantra.completedSets > 0
+          ? "Set " + mantra.completedSets + " complete"
+          : count === 0 ? "Ready" : "In progress";
       }
 
       function render() {
@@ -1710,6 +1734,8 @@
         }
         mantra.target = Number(target);
         mantra.count = 0;
+        mantra.completedSets = 0;
+        mantra.currentSetComplete = false;
         mantra.lastUsedAt = Date.now();
         saveState();
         render();
@@ -1729,12 +1755,13 @@
           return;
         }
         mantra.count = nextCount;
+        if (nextCount === mantra.target && !mantra.currentSetComplete) {
+          mantra.completedSets = Math.max(0, Math.floor(Number(mantra.completedSets) || 0)) + 1;
+          mantra.currentSetComplete = true;
+        }
         mantra.lastUsedAt = Date.now();
         saveState();
         render();
-        if (nextCount === mantra.target) {
-          showToast("Set complete — " + mantra.target + " repetitions.");
-        }
       }
 
       function isTextEntryElement(element) {
@@ -1801,6 +1828,7 @@
           return;
         }
         mantra.count = 0;
+        mantra.currentSetComplete = false;
         mantra.lastUsedAt = Date.now();
         saveState();
         render();
@@ -1814,6 +1842,8 @@
         }
         mantra.target = null;
         mantra.count = 0;
+        mantra.completedSets = 0;
+        mantra.currentSetComplete = false;
         saveState();
         render();
       }
@@ -1886,6 +1916,8 @@
             text: text,
             target: null,
             count: 0,
+            completedSets: 0,
+            currentSetComplete: false,
             createdAt: Date.now(),
             updatedAt: Date.now(),
             lastUsedAt: Date.now()
