@@ -713,13 +713,23 @@
     }
 
     .counter-status {
-      display: block;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 0.35em;
       min-height: 20px;
       margin-top: 13px;
       color: var(--accent);
       font-size: 14px;
       font-weight: 850;
       text-align: center;
+    }
+
+    .set-countdown {
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+      font-weight: 750;
     }
 
     .counter-shell {
@@ -1302,7 +1312,10 @@
 
             <progress class="progress-track" id="progressTrack" aria-label="Chanting progress" value="0" max="11">0 of 11</progress>
 
-            <strong class="counter-status" id="counterStatus" role="status" aria-live="polite">Ready</strong>
+            <strong class="counter-status" id="counterStatus" role="status" aria-live="polite">
+              <span id="counterStatusText">Ready</span>
+              <span class="set-countdown" id="setCountdown" aria-hidden="true"></span>
+            </strong>
 
             <div class="counter-actions">
               <button class="secondary-button" id="resetButton" type="button">Reset to 0</button>
@@ -1367,9 +1380,13 @@
 
       var STORAGE_KEY = "sanskritMantraChanting.v1";
       var TARGETS = [11, 21, 108];
+      var AUTO_ADVANCE_DELAY_MS = 1000;
       var editingId = null;
       var deletingId = null;
       var toastTimer = null;
+      var autoAdvanceTimer = null;
+      var countdownTimer = null;
+      var pendingAutoAdvance = null;
       var lastFocusedElement = null;
 
       var refs = {
@@ -1396,6 +1413,8 @@
         setChooser: document.getElementById("setChooser"),
         counterArea: document.getElementById("counterArea"),
         counterStatus: document.getElementById("counterStatus"),
+        counterStatusText: document.getElementById("counterStatusText"),
+        setCountdown: document.getElementById("setCountdown"),
         decrementButton: document.getElementById("decrementButton"),
         incrementButton: document.getElementById("incrementButton"),
         countValue: document.getElementById("countValue"),
@@ -1679,15 +1698,100 @@
         refs.mantraList.appendChild(item);
       }
 
+      function autoAdvanceMatches(mantra) {
+        return Boolean(
+          mantra &&
+          pendingAutoAdvance &&
+          pendingAutoAdvance.mantraId === mantra.id &&
+          pendingAutoAdvance.target === Number(mantra.target) &&
+          pendingAutoAdvance.completedSet === Number(mantra.completedSets)
+        );
+      }
+
+      function clearAutoAdvance() {
+        window.clearTimeout(autoAdvanceTimer);
+        window.clearInterval(countdownTimer);
+        autoAdvanceTimer = null;
+        countdownTimer = null;
+        pendingAutoAdvance = null;
+        refs.setCountdown.textContent = "";
+      }
+
+      function updateSetCountdown() {
+        var mantra = getActiveMantra();
+        var remaining;
+        var tenths;
+
+        if (!autoAdvanceMatches(mantra)) {
+          return;
+        }
+
+        remaining = Math.max(0, pendingAutoAdvance.deadline - Date.now());
+        tenths = Math.max(1, Math.ceil(remaining / 100));
+        refs.setCountdown.textContent = "· Next set in " + (tenths / 10).toFixed(1) + "s";
+      }
+
+      function finishAutoAdvance() {
+        var pending = pendingAutoAdvance;
+        var mantra;
+
+        if (!pending) {
+          return;
+        }
+
+        window.clearTimeout(autoAdvanceTimer);
+        window.clearInterval(countdownTimer);
+        autoAdvanceTimer = null;
+        countdownTimer = null;
+        pendingAutoAdvance = null;
+        refs.setCountdown.textContent = "";
+
+        mantra = findMantraIn(state.mantras, pending.mantraId);
+        if (
+          mantra &&
+          Number(mantra.target) === pending.target &&
+          Number(mantra.completedSets) === pending.completedSet &&
+          mantra.currentSetComplete &&
+          Number(mantra.count) >= pending.target
+        ) {
+          mantra.count = 0;
+          mantra.currentSetComplete = false;
+          mantra.lastUsedAt = Date.now();
+          saveState();
+        }
+
+        render();
+      }
+
+      function scheduleAutoAdvance(mantra) {
+        if (autoAdvanceMatches(mantra)) {
+          updateSetCountdown();
+          return;
+        }
+
+        clearAutoAdvance();
+        pendingAutoAdvance = {
+          mantraId: mantra.id,
+          target: Number(mantra.target),
+          completedSet: Number(mantra.completedSets),
+          deadline: Date.now() + AUTO_ADVANCE_DELAY_MS
+        };
+        updateSetCountdown();
+        countdownTimer = window.setInterval(updateSetCountdown, 50);
+        autoAdvanceTimer = window.setTimeout(finishAutoAdvance, AUTO_ADVANCE_DELAY_MS);
+      }
+
       function renderPractice() {
         var mantra = getActiveMantra();
         var target;
         var count;
+        var awaitingNextSet;
 
         refs.emptyState.hidden = Boolean(mantra);
         refs.practiceState.hidden = !mantra;
 
         if (!mantra) {
+          clearAutoAdvance();
           return;
         }
 
@@ -1695,6 +1799,7 @@
         refs.activeMantraText.textContent = mantra.text;
 
         if (!isValidTarget(mantra.target)) {
+          clearAutoAdvance();
           refs.practiceEyebrow.textContent = "Selected mantra";
           refs.setChooser.hidden = false;
           refs.counterArea.hidden = true;
@@ -1703,6 +1808,12 @@
 
         target = Number(mantra.target);
         count = Math.max(0, Math.min(Number(mantra.count) || 0, target));
+        awaitingNextSet = Boolean(mantra.currentSetComplete && count >= target);
+
+        if (pendingAutoAdvance && !autoAdvanceMatches(mantra)) {
+          clearAutoAdvance();
+        }
+
         refs.practiceEyebrow.textContent = target + " repetitions";
         refs.setChooser.hidden = true;
         refs.counterArea.hidden = false;
@@ -1714,11 +1825,17 @@
         refs.progressTrack.max = target;
         refs.progressTrack.value = count;
         refs.progressTrack.textContent = count + " of " + target;
-        refs.decrementButton.disabled = count <= 0;
-        refs.incrementButton.disabled = count >= target;
-        refs.counterStatus.textContent = mantra.completedSets > 0
+        refs.decrementButton.disabled = count <= 0 || awaitingNextSet;
+        refs.incrementButton.disabled = count >= target || awaitingNextSet;
+        refs.counterStatusText.textContent = mantra.completedSets > 0
           ? "Set " + mantra.completedSets + " complete"
           : count === 0 ? "Ready" : "In progress";
+
+        if (awaitingNextSet) {
+          scheduleAutoAdvance(mantra);
+        } else {
+          refs.setCountdown.textContent = "";
+        }
       }
 
       function render() {
@@ -1732,6 +1849,7 @@
         if (!mantra || !isValidTarget(target)) {
           return;
         }
+        clearAutoAdvance();
         mantra.target = Number(target);
         mantra.count = 0;
         mantra.completedSets = 0;
@@ -1747,6 +1865,9 @@
         var oldCount;
         var nextCount;
         if (!mantra || !isValidTarget(mantra.target)) {
+          return;
+        }
+        if (autoAdvanceMatches(mantra)) {
           return;
         }
         oldCount = Number(mantra.count) || 0;
@@ -1827,6 +1948,7 @@
         if (!mantra || !isValidTarget(mantra.target)) {
           return;
         }
+        clearAutoAdvance();
         mantra.count = 0;
         mantra.currentSetComplete = false;
         mantra.lastUsedAt = Date.now();
@@ -1840,6 +1962,7 @@
         if (!mantra) {
           return;
         }
+        clearAutoAdvance();
         mantra.target = null;
         mantra.count = 0;
         mantra.completedSets = 0;
@@ -1965,6 +2088,9 @@
         if (index === -1) {
           closeDeleteModal();
           return;
+        }
+        if (pendingAutoAdvance && pendingAutoAdvance.mantraId === deletingId) {
+          clearAutoAdvance();
         }
         state.mantras.splice(index, 1);
         if (state.activeId === deletingId) {
