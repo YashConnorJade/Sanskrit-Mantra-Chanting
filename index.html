@@ -855,8 +855,17 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      flex-wrap: wrap;
       gap: 10px;
+      max-width: 480px;
       margin-top: 18px;
+      margin-right: auto;
+      margin-left: auto;
+    }
+
+    .counter-actions .secondary-button {
+      flex: 1 1 130px;
+      max-width: 150px;
     }
 
     .secondary-button,
@@ -1319,7 +1328,8 @@
 
             <div class="counter-actions">
               <button class="secondary-button" id="resetButton" type="button">Reset to 0</button>
-              <button class="text-button" id="changeSetButton" type="button">Change set</button>
+              <button class="secondary-button" id="resetSetButton" type="button">Reset set to 0</button>
+              <button class="secondary-button" id="changeSetButton" type="button">Change set</button>
             </div>
           </div>
         </section>
@@ -1380,7 +1390,7 @@
 
       var STORAGE_KEY = "sanskritMantraChanting.v1";
       var TARGETS = [11, 21, 108];
-      var AUTO_ADVANCE_DELAY_MS = 1000;
+      var AUTO_ADVANCE_DELAY_MS = 500;
       var editingId = null;
       var deletingId = null;
       var toastTimer = null;
@@ -1421,6 +1431,7 @@
         countLimit: document.getElementById("countLimit"),
         progressTrack: document.getElementById("progressTrack"),
         resetButton: document.getElementById("resetButton"),
+        resetSetButton: document.getElementById("resetSetButton"),
         changeSetButton: document.getElementById("changeSetButton"),
         mantraModal: document.getElementById("mantraModal"),
         mantraModalTitle: document.getElementById("mantraModalTitle"),
@@ -1957,6 +1968,23 @@
         showToast("Counter reset to 0.");
       }
 
+      function resetSetCount() {
+        var mantra = getActiveMantra();
+        if (!mantra || !isValidTarget(mantra.target)) {
+          return;
+        }
+        clearAutoAdvance();
+        mantra.completedSets = 0;
+        if (mantra.currentSetComplete) {
+          mantra.count = 0;
+          mantra.currentSetComplete = false;
+        }
+        mantra.lastUsedAt = Date.now();
+        saveState();
+        render();
+        showToast("Set counter reset to 0.");
+      }
+
       function changeSet() {
         var mantra = getActiveMantra();
         if (!mantra) {
@@ -2160,6 +2188,7 @@
       refs.decrementButton.addEventListener("click", function () { stepCount(-1); });
       refs.incrementButton.addEventListener("click", function () { stepCount(1); });
       refs.resetButton.addEventListener("click", resetCount);
+      refs.resetSetButton.addEventListener("click", resetSetCount);
       refs.changeSetButton.addEventListener("click", changeSet);
 
       Array.prototype.forEach.call(document.querySelectorAll("[data-target]"), function (button) {
