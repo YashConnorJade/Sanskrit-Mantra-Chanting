@@ -59,7 +59,7 @@
       --focus: #1677d2;
       --shadow: 0 16px 44px rgba(101, 52, 17, 0.13);
       --small-shadow: 0 8px 22px rgba(101, 52, 17, 0.12);
-      --background-image-alpha: 0.14;
+      --background-image-alpha: 0.2;
     }
 
     :root[data-theme="dark"] {
@@ -134,17 +134,24 @@
     }
 
     .app-shell {
+      --sidebar-width: clamp(230px, 27vw, 330px);
       display: grid;
-      grid-template-columns: clamp(230px, 27vw, 330px) minmax(0, 1fr);
+      grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
       width: 100vw;
       height: 100vh;
       min-height: 480px;
+      transition: grid-template-columns 220ms ease;
+    }
+
+    .app-shell.sidebar-collapsed {
+      grid-template-columns: 0 minmax(0, 1fr);
     }
 
     .sidebar {
       position: relative;
       z-index: 20;
       display: flex;
+      width: var(--sidebar-width);
       min-width: 0;
       flex-direction: column;
       overflow: hidden;
@@ -152,6 +159,28 @@
       border-right: 1px solid var(--line);
       background: var(--sidebar);
       box-shadow: 9px 0 28px rgba(54, 31, 18, 0.08);
+      opacity: 1;
+      transform: translateX(0);
+      visibility: visible;
+      transition:
+        transform 220ms ease,
+        opacity 180ms ease,
+        visibility 0s linear;
+    }
+
+    .app-shell.sidebar-collapsed .sidebar {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(-100%);
+      visibility: hidden;
+      transition:
+        transform 220ms ease,
+        opacity 180ms ease,
+        visibility 0s linear 220ms;
+    }
+
+    .sidebar-backdrop {
+      display: none;
     }
 
     .brand {
@@ -178,7 +207,29 @@
     }
 
     .brand-copy {
+      flex: 1 1 auto;
       min-width: 0;
+    }
+
+    .sidebar-close-button {
+      display: inline-grid;
+      width: 42px;
+      height: 42px;
+      flex: 0 0 42px;
+      place-items: center;
+      padding: 0;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--muted);
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      font-size: 1.35rem;
+      line-height: 1;
+    }
+
+    .sidebar-close-button:hover {
+      background: var(--selected);
+      color: var(--heading);
     }
 
     .brand-title {
@@ -485,6 +536,21 @@
       font-size: 0.75rem;
       letter-spacing: 0.08em;
       text-transform: uppercase;
+    }
+
+    .topbar-leading {
+      display: flex;
+      min-width: 0;
+      align-items: center;
+      gap: 11px;
+    }
+
+    .sidebar-open-button {
+      display: inline-flex;
+      width: 42px;
+      min-width: 42px;
+      flex: 0 0 42px;
+      padding: 8px;
     }
 
     .top-actions {
@@ -960,12 +1026,48 @@
     }
 
     @media (max-width: 720px) {
-      .app-shell {
-        grid-template-columns: clamp(148px, 41vw, 195px) minmax(0, 1fr);
+      .app-shell,
+      .app-shell.sidebar-collapsed {
+        display: block;
       }
 
       .sidebar {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        width: min(325px, 86vw);
         padding: 17px 9px 10px;
+      }
+
+      .sidebar-backdrop {
+        position: fixed;
+        z-index: 15;
+        inset: 0;
+        display: block;
+        padding: 0;
+        border: 0;
+        background: rgba(10, 12, 14, 0.46);
+        opacity: 1;
+        pointer-events: auto;
+        visibility: visible;
+        transition:
+          opacity 180ms ease,
+          visibility 0s linear;
+      }
+
+      .app-shell.sidebar-collapsed .sidebar-backdrop {
+        opacity: 0;
+        pointer-events: none;
+        visibility: hidden;
+        transition:
+          opacity 180ms ease,
+          visibility 0s linear 180ms;
+      }
+
+      .main-shell {
+        width: 100%;
+        height: 100vh;
       }
 
       .brand {
@@ -978,6 +1080,12 @@
         height: 39px;
         flex-basis: 39px;
         font-size: 23px;
+      }
+
+      .sidebar-close-button {
+        width: 39px;
+        height: 39px;
+        flex-basis: 39px;
       }
 
       .brand-title {
@@ -1024,7 +1132,8 @@
       }
 
       .top-actions {
-        width: 100%;
+        width: auto;
+        margin-left: auto;
         justify-content: flex-end;
         gap: 6px;
       }
@@ -1160,14 +1269,23 @@
 </head>
 
 <body>
-  <div class="app-shell">
-    <aside class="sidebar" aria-label="Mantra library">
+  <div class="app-shell" id="appShell">
+    <aside class="sidebar" id="sidebar" aria-label="Mantra library" aria-hidden="false">
       <div class="brand">
         <div class="brand-mark" aria-hidden="true">ॐ</div>
         <div class="brand-copy">
           <h1 class="brand-title">Sanskrit Mantra</h1>
           <p class="brand-subtitle">Chanting</p>
         </div>
+        <button
+          class="sidebar-close-button"
+          id="sidebarCloseButton"
+          type="button"
+          aria-label="Hide mantra sidebar"
+          title="Hide mantra sidebar"
+        >
+          <span class="action-icon" aria-hidden="true">×</span>
+        </button>
       </div>
 
       <div class="sidebar-heading">
@@ -1199,6 +1317,14 @@
       </p>
     </aside>
 
+    <button
+      class="sidebar-backdrop"
+      id="sidebarBackdrop"
+      type="button"
+      tabindex="-1"
+      aria-label="Close mantra sidebar"
+    ></button>
+
     <main class="main-shell" id="mainShell">
       <div class="slideshow" id="slideshow" aria-hidden="true">
         <div class="background-slide" id="backgroundSlideA"></div>
@@ -1207,7 +1333,20 @@
       <div class="main-tint" aria-hidden="true"></div>
 
       <header class="topbar">
-        <div class="topbar-context" id="topbarContext">Mantra chanting</div>
+        <div class="topbar-leading">
+          <button
+            class="icon-button sidebar-open-button"
+            id="sidebarOpenButton"
+            type="button"
+            aria-controls="sidebar"
+            aria-expanded="true"
+            aria-label="Close mantra sidebar"
+            title="Close mantra sidebar"
+          >
+            <span class="action-icon" aria-hidden="true">☰</span>
+          </button>
+          <div class="topbar-context" id="topbarContext">Mantra chanting</div>
+        </div>
         <div class="top-actions">
           <button
             class="icon-button"
@@ -1391,7 +1530,7 @@
        Change BACKGROUND_IMAGE_ALPHA to control how faint the wallpapers are.
        0.00 = invisible, 1.00 = fully visible. A value around 0.10–0.20 is faint.
        ================================================================ */
-    const BACKGROUND_IMAGE_ALPHA = 0.14;
+    const BACKGROUND_IMAGE_ALPHA = 0.25;
     const SLIDESHOW_INTERVAL_MS = 8000;
     const SLIDESHOW_TRANSITION_MS = 1400;
 
@@ -1414,7 +1553,7 @@
       "all-devs-together.jpg"
     ];
 
-    const AUTO_NEXT_SET_DELAY_MS = 500;
+    const AUTO_NEXT_SET_DELAY_MS = 1000;
     const VALID_SET_SIZES = [11, 21, 108];
     const IMAGE_FILE_PATTERN = /\.(?:avif|bmp|gif|jpe?g|png|webp)$/i;
 
@@ -1438,6 +1577,11 @@
 
     const elements = {
       root: document.documentElement,
+      appShell: document.getElementById("appShell"),
+      sidebar: document.getElementById("sidebar"),
+      sidebarOpenButton: document.getElementById("sidebarOpenButton"),
+      sidebarCloseButton: document.getElementById("sidebarCloseButton"),
+      sidebarBackdrop: document.getElementById("sidebarBackdrop"),
       mainShell: document.getElementById("mainShell"),
       mantraTotal: document.getElementById("mantraTotal"),
       mantraList: document.getElementById("mantraList"),
@@ -1496,6 +1640,7 @@
     let slideshowIsLoading = false;
 
     normalizeLoadedState();
+    initializeSidebar();
     bindEvents();
     initializeTheme();
     initializeSlideshow();
@@ -1720,6 +1865,9 @@
     }
 
     function bindEvents() {
+      elements.sidebarOpenButton.addEventListener("click", toggleSidebar);
+      elements.sidebarCloseButton.addEventListener("click", closeSidebar);
+      elements.sidebarBackdrop.addEventListener("click", closeSidebar);
       elements.addMantraButton.addEventListener("click", () => openMantraModal());
       elements.welcomeAddButton.addEventListener("click", () => openMantraModal());
       elements.closeModalButton.addEventListener("click", closeMantraModal);
@@ -1747,6 +1895,49 @@
 
       document.addEventListener("keydown", handleKeyboardShortcuts);
       document.addEventListener("visibilitychange", handleDocumentVisibility);
+    }
+
+    function initializeSidebar() {
+      setSidebarOpen(true, false);
+    }
+
+    function isSidebarOpen() {
+      return !elements.appShell.classList.contains("sidebar-collapsed");
+    }
+
+    function setSidebarOpen(isOpen, moveFocus = true) {
+      elements.appShell.classList.toggle("sidebar-collapsed", !isOpen);
+      elements.sidebar.setAttribute("aria-hidden", String(!isOpen));
+      elements.sidebarOpenButton.setAttribute("aria-expanded", String(isOpen));
+
+      const toggleLabel = isOpen
+        ? "Close mantra sidebar"
+        : "Open mantra sidebar";
+      elements.sidebarOpenButton.setAttribute("aria-label", toggleLabel);
+      elements.sidebarOpenButton.title = toggleLabel;
+
+      if (isOpen) {
+        elements.sidebar.removeAttribute("inert");
+      } else {
+        elements.sidebar.setAttribute("inert", "");
+      }
+
+      if (!moveFocus) return;
+
+      window.requestAnimationFrame(() => {
+        const focusTarget = isOpen
+          ? elements.sidebarCloseButton
+          : elements.sidebarOpenButton;
+        focusTarget.focus({ preventScroll: true });
+      });
+    }
+
+    function toggleSidebar() {
+      setSidebarOpen(!isSidebarOpen(), false);
+    }
+
+    function closeSidebar() {
+      setSidebarOpen(false);
     }
 
     function renderEverything() {
@@ -2019,6 +2210,12 @@
       if (event.key === "Escape" && !elements.mantraModal.hidden) {
         event.preventDefault();
         closeMantraModal();
+        return;
+      }
+
+      if (event.key === "Escape" && isSidebarOpen()) {
+        event.preventDefault();
+        closeSidebar();
         return;
       }
 
