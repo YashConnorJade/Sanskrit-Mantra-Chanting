@@ -59,7 +59,8 @@
       --focus: #1677d2;
       --shadow: 0 16px 44px rgba(101, 52, 17, 0.13);
       --small-shadow: 0 8px 22px rgba(101, 52, 17, 0.12);
-      --background-image-alpha: 0.2;
+      --background-image-alpha: 0.25;
+      --background-fade-duration: 3000ms;
     }
 
     :root[data-theme="dark"] {
@@ -497,7 +498,7 @@
       background-size: cover;
       opacity: 0;
       transform: scale(1.025);
-      transition: opacity 1.4s ease;
+      transition: opacity var(--background-fade-duration) ease-in-out;
       will-change: opacity;
     }
 
@@ -1285,6 +1286,11 @@
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
       }
+
+      /* A slow opacity crossfade has no moving geometry, so keep it enabled. */
+      .background-slide {
+        transition-duration: var(--background-fade-duration) !important;
+      }
     }
   </style>
 </head>
@@ -1549,11 +1555,14 @@
        BACKGROUND SLIDESHOW SETTINGS
 
        Change BACKGROUND_IMAGE_ALPHA to control how faint the wallpapers are.
-       0.00 = invisible, 1.00 = fully visible. A value around 0.10–0.20 is faint.
+       0.00 = invisible, 1.00 = fully visible.
+
+       Change BACKGROUND_FADE_DURATION_MS to control how slowly one wallpaper
+       fades into the next. The value is measured in milliseconds.
        ================================================================ */
     const BACKGROUND_IMAGE_ALPHA = 0.25;
+    const BACKGROUND_FADE_DURATION_MS = 3000;
     const SLIDESHOW_INTERVAL_MS = 8000;
-    const SLIDESHOW_TRANSITION_MS = 1400;
 
     /* GitHub repository settings. These match your current public repository. */
     const DEFAULT_GITHUB_OWNER = "YashConnorJade";
@@ -2487,6 +2496,10 @@
         "--background-image-alpha",
         String(Math.min(1, Math.max(0, BACKGROUND_IMAGE_ALPHA)))
       );
+      elements.root.style.setProperty(
+        "--background-fade-duration",
+        `${Math.max(0, BACKGROUND_FADE_DURATION_MS)}ms`
+      );
       updateSlideshowButton();
       slideshowImages = await discoverBackgroundImages();
 
@@ -2576,9 +2589,11 @@
           ? elements.backgroundSlideA
           : elements.backgroundSlideB;
 
-        incoming.style.transitionDuration = `${SLIDESHOW_TRANSITION_MS}ms`;
-        outgoing.style.transitionDuration = `${SLIDESHOW_TRANSITION_MS}ms`;
+        incoming.classList.remove("is-visible");
         incoming.style.backgroundImage = `url(${JSON.stringify(imageUrl)})`;
+
+        /* Make the hidden starting state render before beginning the crossfade. */
+        void incoming.offsetWidth;
 
         window.requestAnimationFrame(() => {
           incoming.classList.add("is-visible");
