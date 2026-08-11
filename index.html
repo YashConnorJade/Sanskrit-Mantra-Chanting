@@ -206,6 +206,12 @@
       line-height: 1;
     }
 
+    .om-glyph {
+      display: block;
+      line-height: 1;
+      transform: translateY(0.1em);
+    }
+
     .brand-copy {
       flex: 1 1 auto;
       min-width: 0;
@@ -507,11 +513,22 @@
       position: absolute;
       z-index: -1;
       inset: 0;
-      background: var(--page);
       background:
-        radial-gradient(circle at 74% 12%, transparent 0, var(--page) 72%),
         linear-gradient(180deg, transparent, color-mix(in srgb, var(--page-solid) 48%, transparent));
       pointer-events: none;
+    }
+
+    .main-tint::before {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 74% 12%, transparent 0, var(--page) 72%);
+      content: "";
+      opacity: 1;
+      transition: opacity 220ms ease;
+    }
+
+    .app-shell.sidebar-collapsed .main-tint::before {
+      opacity: 0;
     }
 
     .topbar {
@@ -680,6 +697,10 @@
       box-shadow: var(--shadow);
       font-family: "Nirmala UI", "Mangal", sans-serif;
       font-size: 50px;
+    }
+
+    .welcome-mark .om-glyph {
+      transform: translateY(0.16em);
     }
 
     .welcome-title,
@@ -1272,7 +1293,7 @@
   <div class="app-shell" id="appShell">
     <aside class="sidebar" id="sidebar" aria-label="Mantra library" aria-hidden="false">
       <div class="brand">
-        <div class="brand-mark" aria-hidden="true">ॐ</div>
+        <div class="brand-mark" aria-hidden="true"><span class="om-glyph">ॐ</span></div>
         <div class="brand-copy">
           <h1 class="brand-title">Sanskrit Mantra</h1>
           <p class="brand-subtitle">Chanting</p>
@@ -1379,7 +1400,7 @@
 
       <div class="main-scroll">
         <section class="content-card" id="welcomeView">
-          <div class="welcome-mark" aria-hidden="true">ॐ</div>
+          <div class="welcome-mark" aria-hidden="true"><span class="om-glyph">ॐ</span></div>
           <p class="eyebrow">Your personal chanting space</p>
           <h2 class="welcome-title">Sanskrit Mantra Chanting</h2>
           <p class="welcome-copy">
