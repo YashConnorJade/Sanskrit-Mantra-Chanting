@@ -243,29 +243,38 @@
       color: var(--heading);
     }
 
-    .sidebar-resize-handle {
-      position: absolute;
-      z-index: 4;
+    .sidebar-edge-toggle {
+      position: fixed;
+      z-index: 25;
       top: 50%;
-      right: 0;
+      left: var(--sidebar-width);
       display: grid;
-      width: 18px;
+      width: 30px;
       height: 56px;
       place-items: center;
       padding: 0;
-      border: 0;
-      border-radius: 10px 0 0 10px;
-      background: color-mix(in srgb, var(--sidebar) 78%, var(--line));
+      border: 1px solid var(--line);
+      border-left: 0;
+      border-radius: 0 11px 11px 0;
+      background: color-mix(in srgb, var(--sidebar) 88%, var(--surface-solid));
       color: var(--line-strong);
-      cursor: col-resize;
-      opacity: 0.58;
-      touch-action: none;
+      box-shadow: 5px 0 15px rgba(38, 28, 22, 0.1);
+      cursor: pointer;
       transform: translateY(-50%);
-      transition: opacity 150ms ease, background-color 150ms ease;
+      transition:
+        left 220ms ease,
+        width 150ms ease,
+        color 150ms ease,
+        background-color 150ms ease,
+        box-shadow 150ms ease;
     }
 
-    .sidebar-resize-handle::before {
-      width: 11px;
+    .app-shell.sidebar-collapsed .sidebar-edge-toggle {
+      left: 0;
+    }
+
+    .sidebar-edge-toggle::before {
+      width: 12px;
       height: 2px;
       border-radius: 999px;
       background: currentColor;
@@ -273,21 +282,12 @@
       content: "";
     }
 
-    .sidebar-resize-handle:hover,
-    .sidebar-resize-handle:focus-visible,
-    .sidebar-resize-handle.is-dragging {
-      background: color-mix(in srgb, var(--sidebar) 58%, var(--selected));
-      opacity: 1;
-    }
-
-    body.is-resizing-sidebar,
-    body.is-resizing-sidebar * {
-      cursor: col-resize !important;
-      user-select: none !important;
-    }
-
-    body.is-resizing-sidebar .app-shell {
-      transition: none;
+    .sidebar-edge-toggle:hover,
+    .sidebar-edge-toggle:focus-visible {
+      width: 34px;
+      background: color-mix(in srgb, var(--sidebar) 68%, var(--selected));
+      color: var(--heading);
+      box-shadow: 6px 0 18px rgba(38, 28, 22, 0.15);
     }
 
     .brand-title {
@@ -1263,8 +1263,14 @@
         padding: 17px 9px 10px;
       }
 
-      .sidebar-resize-handle {
-        display: none;
+      .sidebar-edge-toggle {
+        left: min(325px, 86vw);
+        width: 28px;
+        height: 52px;
+      }
+
+      .app-shell.sidebar-collapsed .sidebar-edge-toggle {
+        left: 0;
       }
 
       .sidebar-backdrop {
@@ -1553,19 +1559,17 @@
         Your mantras and progress stay privately in this browser.
       </p>
 
-      <div
-        class="sidebar-resize-handle"
-        id="sidebarResizeHandle"
-        role="separator"
-        tabindex="0"
-        aria-label="Resize mantra sidebar"
-        aria-orientation="vertical"
-        aria-valuemin="230"
-        aria-valuemax="520"
-        aria-valuenow="330"
-        title="Drag to resize the sidebar"
-      ></div>
     </aside>
+
+    <button
+      class="sidebar-edge-toggle"
+      id="sidebarEdgeToggle"
+      type="button"
+      aria-controls="sidebar"
+      aria-expanded="true"
+      aria-label="Close mantra sidebar"
+      title="Close mantra sidebar"
+    ></button>
 
     <button
       class="sidebar-backdrop"
@@ -1633,8 +1637,8 @@
               aria-expanded="false"
               aria-controls="wallpaperSettings"
               aria-haspopup="dialog"
-              aria-label="Open wallpaper settings"
-              title="Wallpaper settings"
+              aria-label="Open settings"
+              title="Settings"
             >
               <span class="action-icon" aria-hidden="true">⚙</span>
               <span class="action-label">Settings</span>
@@ -1647,7 +1651,7 @@
               aria-labelledby="settingsTitle"
               hidden
             >
-              <h2 class="settings-title" id="settingsTitle">Wallpaper settings</h2>
+              <h2 class="settings-title" id="settingsTitle">Display &amp; timing</h2>
               <p class="settings-description">
                 Changes apply immediately and stay saved on this device.
               </p>
@@ -1677,6 +1681,24 @@
                 </span>
                 <input id="lightAlphaSlider" type="range" min="0" max="1" step="0.01" value="0.6">
                 <span class="settings-scale" aria-hidden="true"><span>0.00</span><span>1.00</span></span>
+              </label>
+
+              <label class="settings-slider" for="fadeDurationSlider">
+                <span class="settings-slider-heading">
+                  <span>Image transition time</span>
+                  <output class="settings-value" id="fadeDurationOutput" for="fadeDurationSlider">3.0 s</output>
+                </span>
+                <input id="fadeDurationSlider" type="range" min="250" max="10000" step="250" value="3000">
+                <span class="settings-scale" aria-hidden="true"><span>0.25 s</span><span>10 s</span></span>
+              </label>
+
+              <label class="settings-slider" for="autoNextSetDelaySlider">
+                <span class="settings-slider-heading">
+                  <span>Next set delay</span>
+                  <output class="settings-value" id="autoNextSetDelayOutput" for="autoNextSetDelaySlider">1.0 s</output>
+                </span>
+                <input id="autoNextSetDelaySlider" type="range" min="250" max="10000" step="250" value="1000">
+                <span class="settings-scale" aria-hidden="true"><span>0.25 s</span><span>10 s</span></span>
               </label>
 
               <button
@@ -1856,9 +1878,6 @@
     const BACKGROUND_EDGE_FADE_PERCENT = 12;
     const BACKGROUND_FADE_DURATION_MS = 3000;
     const SLIDESHOW_INTERVAL_MS = 8000;
-    const SIDEBAR_MIN_WIDTH = 230;
-    const SIDEBAR_MAX_WIDTH = 520;
-    const SIDEBAR_KEYBOARD_STEP = 10;
 
     /* GitHub repository settings. These match your current public repository. */
     const DEFAULT_GITHUB_OWNER = "YashConnorJade";
@@ -1890,8 +1909,7 @@
       themeOverride: "smc.theme-override.v1",
       slideshowEnabled: "smc.slideshow-enabled.v1",
       slideshowCache: "smc.slideshow-image-names.v2",
-      backgroundSettings: "smc.background-settings.v1",
-      sidebarWidth: "smc.sidebar-width.v1"
+      backgroundSettings: "smc.background-settings.v1"
     });
 
     const LEGACY_MANTRA_KEYS = [
@@ -1909,7 +1927,7 @@
       sidebar: document.getElementById("sidebar"),
       sidebarOpenButton: document.getElementById("sidebarOpenButton"),
       sidebarCloseButton: document.getElementById("sidebarCloseButton"),
-      sidebarResizeHandle: document.getElementById("sidebarResizeHandle"),
+      sidebarEdgeToggle: document.getElementById("sidebarEdgeToggle"),
       sidebarBackdrop: document.getElementById("sidebarBackdrop"),
       mainShell: document.getElementById("mainShell"),
       mantraTotal: document.getElementById("mantraTotal"),
@@ -1944,6 +1962,10 @@
       darkAlphaOutput: document.getElementById("darkAlphaOutput"),
       lightAlphaSlider: document.getElementById("lightAlphaSlider"),
       lightAlphaOutput: document.getElementById("lightAlphaOutput"),
+      fadeDurationSlider: document.getElementById("fadeDurationSlider"),
+      fadeDurationOutput: document.getElementById("fadeDurationOutput"),
+      autoNextSetDelaySlider: document.getElementById("autoNextSetDelaySlider"),
+      autoNextSetDelayOutput: document.getElementById("autoNextSetDelayOutput"),
       resetBackgroundSettingsButton: document.getElementById("resetBackgroundSettingsButton"),
       slideshowToggle: document.getElementById("slideshowToggle"),
       slideshowIcon: document.getElementById("slideshowIcon"),
@@ -1973,12 +1995,12 @@
 
     let slideshowEnabled = loadSlideshowPreference();
     let slideshowImages = [];
+    let slideshowQueue = [];
     let slideshowIndex = -1;
     let visibleSlide = "B";
     let slideshowTimer = null;
     let slideshowIsLoading = false;
     let backgroundSettings = loadBackgroundSettings();
-    let sidebarResizePointerId = null;
 
     normalizeLoadedState();
     initializeSidebar();
@@ -2171,6 +2193,18 @@
           0,
           1,
           LIGHT_MODE_BACKGROUND_IMAGE_ALPHA
+        ),
+        fadeDurationMs: clampNumber(
+          settings.fadeDurationMs,
+          250,
+          10000,
+          BACKGROUND_FADE_DURATION_MS
+        ),
+        autoNextSetDelayMs: clampNumber(
+          settings.autoNextSetDelayMs,
+          250,
+          10000,
+          AUTO_NEXT_SET_DELAY_MS
         )
       };
     }
@@ -2242,6 +2276,7 @@
 
     function bindEvents() {
       elements.sidebarOpenButton.addEventListener("click", toggleSidebar);
+      elements.sidebarEdgeToggle.addEventListener("click", toggleSidebar);
       elements.sidebarCloseButton.addEventListener("click", closeSidebar);
       elements.sidebarBackdrop.addEventListener("click", closeSidebar);
       elements.addMantraButton.addEventListener("click", () => openMantraModal());
@@ -2268,148 +2303,26 @@
       elements.changeSetButton.addEventListener("click", changeRepetitionSet);
       elements.themeToggle.addEventListener("click", toggleTheme);
       elements.settingsToggle.addEventListener("click", toggleWallpaperSettings);
-      elements.edgeFadeSlider.addEventListener("input", handleBackgroundSettingsInput);
-      elements.darkAlphaSlider.addEventListener("input", handleBackgroundSettingsInput);
-      elements.lightAlphaSlider.addEventListener("input", handleBackgroundSettingsInput);
-      elements.edgeFadeSlider.addEventListener("change", saveBackgroundSettings);
-      elements.darkAlphaSlider.addEventListener("change", saveBackgroundSettings);
-      elements.lightAlphaSlider.addEventListener("change", saveBackgroundSettings);
+      [
+        elements.edgeFadeSlider,
+        elements.darkAlphaSlider,
+        elements.lightAlphaSlider,
+        elements.fadeDurationSlider,
+        elements.autoNextSetDelaySlider
+      ].forEach((slider) => {
+        slider.addEventListener("input", handleBackgroundSettingsInput);
+        slider.addEventListener("change", saveBackgroundSettings);
+      });
       elements.resetBackgroundSettingsButton.addEventListener("click", resetBackgroundSettings);
       elements.slideshowToggle.addEventListener("click", toggleSlideshow);
-
-      elements.sidebarResizeHandle.addEventListener("pointerdown", startSidebarResize);
-      elements.sidebarResizeHandle.addEventListener("pointermove", continueSidebarResize);
-      elements.sidebarResizeHandle.addEventListener("pointerup", finishSidebarResize);
-      elements.sidebarResizeHandle.addEventListener("pointercancel", finishSidebarResize);
-      elements.sidebarResizeHandle.addEventListener("lostpointercapture", finishSidebarResize);
-      elements.sidebarResizeHandle.addEventListener("keydown", handleSidebarResizeKeyboard);
 
       document.addEventListener("keydown", handleKeyboardShortcuts);
       document.addEventListener("pointerdown", handleDocumentPointerDown);
       document.addEventListener("visibilitychange", handleDocumentVisibility);
-      window.addEventListener("resize", handleWindowResize);
     }
 
     function initializeSidebar() {
-      if (window.innerWidth > 720) {
-        const savedWidth = Number(safeStorageGet(STORAGE_KEYS.sidebarWidth));
-        const currentWidth = elements.sidebar.getBoundingClientRect().width;
-        applySidebarWidth(
-          Number.isFinite(savedWidth) && savedWidth > 0 ? savedWidth : currentWidth,
-          false
-        );
-      }
-
       setSidebarOpen(true, false);
-    }
-
-    function getSidebarMaximumWidth() {
-      return Math.max(
-        SIDEBAR_MIN_WIDTH,
-        Math.min(SIDEBAR_MAX_WIDTH, window.innerWidth - 300)
-      );
-    }
-
-    function applySidebarWidth(width, shouldSave) {
-      const maximum = getSidebarMaximumWidth();
-      const nextWidth = Math.round(
-        clampNumber(width, SIDEBAR_MIN_WIDTH, maximum, SIDEBAR_MIN_WIDTH)
-      );
-
-      elements.appShell.style.setProperty("--sidebar-width", `${nextWidth}px`);
-      elements.sidebarResizeHandle.setAttribute("aria-valuemin", String(SIDEBAR_MIN_WIDTH));
-      elements.sidebarResizeHandle.setAttribute("aria-valuemax", String(maximum));
-      elements.sidebarResizeHandle.setAttribute("aria-valuenow", String(nextWidth));
-
-      if (shouldSave) {
-        safeStorageSet(STORAGE_KEYS.sidebarWidth, String(nextWidth));
-      }
-
-      return nextWidth;
-    }
-
-    function startSidebarResize(event) {
-      if (window.innerWidth <= 720 || event.button !== 0) return;
-
-      event.preventDefault();
-      sidebarResizePointerId = event.pointerId;
-      elements.sidebarResizeHandle.classList.add("is-dragging");
-      document.body.classList.add("is-resizing-sidebar");
-
-      try {
-        elements.sidebarResizeHandle.setPointerCapture(event.pointerId);
-      } catch (_error) {
-        /* Pointer capture is optional; pointer events still resize the sidebar. */
-      }
-
-      applySidebarWidth(event.clientX, false);
-    }
-
-    function continueSidebarResize(event) {
-      if (sidebarResizePointerId === null || event.pointerId !== sidebarResizePointerId) return;
-      applySidebarWidth(event.clientX, false);
-    }
-
-    function finishSidebarResize(event) {
-      if (sidebarResizePointerId === null) return;
-      if (event.pointerId !== undefined && event.pointerId !== sidebarResizePointerId) return;
-
-      const pointerId = sidebarResizePointerId;
-      sidebarResizePointerId = null;
-      elements.sidebarResizeHandle.classList.remove("is-dragging");
-      document.body.classList.remove("is-resizing-sidebar");
-
-      if (window.innerWidth > 720) {
-        const finalWidth = elements.sidebar.getBoundingClientRect().width;
-        applySidebarWidth(finalWidth, true);
-      }
-
-      try {
-        if (elements.sidebarResizeHandle.hasPointerCapture(pointerId)) {
-          elements.sidebarResizeHandle.releasePointerCapture(pointerId);
-        }
-      } catch (_error) {
-        /* The pointer may already have been released by the browser. */
-      }
-    }
-
-    function handleSidebarResizeKeyboard(event) {
-      if (window.innerWidth <= 720) return;
-
-      const currentWidth = elements.sidebar.getBoundingClientRect().width;
-      let nextWidth = currentWidth;
-
-      if (event.key === "ArrowLeft") {
-        nextWidth -= SIDEBAR_KEYBOARD_STEP;
-      } else if (event.key === "ArrowRight") {
-        nextWidth += SIDEBAR_KEYBOARD_STEP;
-      } else if (event.key === "Home") {
-        nextWidth = SIDEBAR_MIN_WIDTH;
-      } else if (event.key === "End") {
-        nextWidth = getSidebarMaximumWidth();
-      } else {
-        return;
-      }
-
-      event.preventDefault();
-      event.stopPropagation();
-      applySidebarWidth(nextWidth, true);
-    }
-
-    function handleWindowResize() {
-      if (window.innerWidth <= 720) {
-        if (sidebarResizePointerId !== null) {
-          finishSidebarResize({ pointerId: sidebarResizePointerId });
-        }
-        return;
-      }
-
-      const savedWidth = Number(safeStorageGet(STORAGE_KEYS.sidebarWidth));
-      const currentWidth = elements.sidebar.getBoundingClientRect().width;
-      applySidebarWidth(
-        Number.isFinite(savedWidth) && savedWidth > 0 ? savedWidth : currentWidth,
-        false
-      );
     }
 
     function isSidebarOpen() {
@@ -2420,12 +2333,15 @@
       elements.appShell.classList.toggle("sidebar-collapsed", !isOpen);
       elements.sidebar.setAttribute("aria-hidden", String(!isOpen));
       elements.sidebarOpenButton.setAttribute("aria-expanded", String(isOpen));
+      elements.sidebarEdgeToggle.setAttribute("aria-expanded", String(isOpen));
 
       const toggleLabel = isOpen
         ? "Close mantra sidebar"
         : "Open mantra sidebar";
       elements.sidebarOpenButton.setAttribute("aria-label", toggleLabel);
       elements.sidebarOpenButton.title = toggleLabel;
+      elements.sidebarEdgeToggle.setAttribute("aria-label", toggleLabel);
+      elements.sidebarEdgeToggle.title = toggleLabel;
 
       if (isOpen) {
         elements.sidebar.removeAttribute("inert");
@@ -2631,11 +2547,12 @@
 
     function startAutoNextSet(mantraId, target) {
       clearAutoNextTimers();
+      const delayMs = backgroundSettings.autoNextSetDelayMs;
 
       transitionState = {
         mantraId,
         target,
-        endsAt: performance.now() + AUTO_NEXT_SET_DELAY_MS
+        endsAt: performance.now() + delayMs
       };
 
       transitionInterval = window.setInterval(renderMainView, 50);
@@ -2650,7 +2567,7 @@
         clearAutoNextTimers();
         saveAllState();
         renderEverything();
-      }, AUTO_NEXT_SET_DELAY_MS);
+      }, delayMs);
 
       renderEverything();
     }
@@ -2866,6 +2783,12 @@
       syncBackgroundSettingsControls();
     }
 
+    function formatDurationSeconds(milliseconds) {
+      let seconds = (milliseconds / 1000).toFixed(2).replace(/0$/, "");
+      if (seconds.endsWith(".")) seconds += "0";
+      return `${seconds} s`;
+    }
+
     function applyBackgroundSettings() {
       elements.root.style.setProperty(
         "--background-image-alpha-dark",
@@ -2879,16 +2802,28 @@
         "--background-edge-fade",
         `${backgroundSettings.edgeFade}%`
       );
+      elements.root.style.setProperty(
+        "--background-fade-duration",
+        `${backgroundSettings.fadeDurationMs}ms`
+      );
     }
 
     function syncBackgroundSettingsControls() {
       elements.edgeFadeSlider.value = String(backgroundSettings.edgeFade);
       elements.darkAlphaSlider.value = String(backgroundSettings.darkAlpha);
       elements.lightAlphaSlider.value = String(backgroundSettings.lightAlpha);
+      elements.fadeDurationSlider.value = String(backgroundSettings.fadeDurationMs);
+      elements.autoNextSetDelaySlider.value = String(backgroundSettings.autoNextSetDelayMs);
 
       elements.edgeFadeOutput.textContent = `${Math.round(backgroundSettings.edgeFade)}%`;
       elements.darkAlphaOutput.textContent = backgroundSettings.darkAlpha.toFixed(2);
       elements.lightAlphaOutput.textContent = backgroundSettings.lightAlpha.toFixed(2);
+      elements.fadeDurationOutput.textContent = formatDurationSeconds(
+        backgroundSettings.fadeDurationMs
+      );
+      elements.autoNextSetDelayOutput.textContent = formatDurationSeconds(
+        backgroundSettings.autoNextSetDelayMs
+      );
 
       elements.edgeFadeSlider.setAttribute(
         "aria-valuetext",
@@ -2901,6 +2836,14 @@
       elements.lightAlphaSlider.setAttribute(
         "aria-valuetext",
         backgroundSettings.lightAlpha.toFixed(2)
+      );
+      elements.fadeDurationSlider.setAttribute(
+        "aria-valuetext",
+        formatDurationSeconds(backgroundSettings.fadeDurationMs)
+      );
+      elements.autoNextSetDelaySlider.setAttribute(
+        "aria-valuetext",
+        formatDurationSeconds(backgroundSettings.autoNextSetDelayMs)
       );
     }
 
@@ -2923,6 +2866,18 @@
           0,
           1,
           LIGHT_MODE_BACKGROUND_IMAGE_ALPHA
+        ),
+        fadeDurationMs: clampNumber(
+          elements.fadeDurationSlider.value,
+          250,
+          10000,
+          BACKGROUND_FADE_DURATION_MS
+        ),
+        autoNextSetDelayMs: clampNumber(
+          elements.autoNextSetDelaySlider.value,
+          250,
+          10000,
+          AUTO_NEXT_SET_DELAY_MS
         )
       };
     }
@@ -2947,7 +2902,9 @@
       backgroundSettings = {
         edgeFade: BACKGROUND_EDGE_FADE_PERCENT,
         darkAlpha: BACKGROUND_IMAGE_ALPHA,
-        lightAlpha: LIGHT_MODE_BACKGROUND_IMAGE_ALPHA
+        lightAlpha: LIGHT_MODE_BACKGROUND_IMAGE_ALPHA,
+        fadeDurationMs: BACKGROUND_FADE_DURATION_MS,
+        autoNextSetDelayMs: AUTO_NEXT_SET_DELAY_MS
       };
       applyBackgroundSettings();
       syncBackgroundSettingsControls();
@@ -2966,7 +2923,7 @@
       elements.settingsToggle.setAttribute("aria-expanded", String(isOpen));
       elements.settingsToggle.setAttribute(
         "aria-label",
-        isOpen ? "Close wallpaper settings" : "Open wallpaper settings"
+        isOpen ? "Close settings" : "Open settings"
       );
 
       if (!moveFocus) return;
@@ -3111,12 +3068,9 @@
 
     async function initializeSlideshow() {
       applyBackgroundSettings();
-      elements.root.style.setProperty(
-        "--background-fade-duration",
-        `${Math.max(0, BACKGROUND_FADE_DURATION_MS)}ms`
-      );
       updateSlideshowButton();
       slideshowImages = await discoverBackgroundImages();
+      slideshowQueue = [];
 
       if (slideshowImages.length === 0) {
         elements.slideshowToggle.disabled = true;
@@ -3176,6 +3130,33 @@
       );
     }
 
+    function refillSlideshowQueue() {
+      const nextQueue = slideshowImages.map((_image, index) => index);
+
+      for (let index = nextQueue.length - 1; index > 0; index -= 1) {
+        const randomIndex = Math.floor(Math.random() * (index + 1));
+        [nextQueue[index], nextQueue[randomIndex]] = [
+          nextQueue[randomIndex],
+          nextQueue[index]
+        ];
+      }
+
+      if (
+        nextQueue.length > 1 &&
+        slideshowIndex >= 0 &&
+        nextQueue[0] === slideshowIndex
+      ) {
+        [nextQueue[0], nextQueue[1]] = [nextQueue[1], nextQueue[0]];
+      }
+
+      slideshowQueue = nextQueue;
+    }
+
+    function getNextRandomSlideshowIndex() {
+      if (slideshowQueue.length === 0) refillSlideshowQueue();
+      return slideshowQueue.shift();
+    }
+
     function showNextBackground(isFirstImage, failedAttempts = 0) {
       if (
         !slideshowEnabled ||
@@ -3192,7 +3173,7 @@
       }
 
       slideshowIsLoading = true;
-      const nextIndex = (slideshowIndex + 1) % slideshowImages.length;
+      const nextIndex = getNextRandomSlideshowIndex();
       const imageUrl = slideshowImages[nextIndex];
       const preloader = new Image();
 
@@ -3221,7 +3202,6 @@
       };
 
       preloader.onerror = () => {
-        slideshowIndex = nextIndex;
         slideshowIsLoading = false;
         showNextBackground(isFirstImage, failedAttempts + 1);
       };
