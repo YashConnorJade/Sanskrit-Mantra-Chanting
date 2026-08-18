@@ -59,12 +59,15 @@
       --focus: #1677d2;
       --shadow: 0 16px 44px rgba(101, 52, 17, 0.13);
       --small-shadow: 0 8px 22px rgba(101, 52, 17, 0.12);
-      --background-image-alpha: 0.25;
+      --background-image-alpha-dark: 0.25;
+      --background-image-alpha-light: 0.6;
+      --background-image-alpha: var(--background-image-alpha-light);
       --background-fade-duration: 3000ms;
     }
 
     :root[data-theme="dark"] {
       color-scheme: dark;
+      --background-image-alpha: var(--background-image-alpha-dark);
       --page: #121a22;
       --page-solid: #121a22;
       --sidebar: #0d141b;
@@ -492,14 +495,21 @@
 
     .background-slide {
       position: absolute;
-      inset: -2%;
+      inset: 0;
       background-position: center;
       background-repeat: no-repeat;
-      background-size: cover;
+      /* Landscape screens: preserve the image height and scale width proportionally. */
+      background-size: auto 100%;
       opacity: 0;
-      transform: scale(1.025);
       transition: opacity var(--background-fade-duration) ease-in-out;
       will-change: opacity;
+    }
+
+    @media (orientation: portrait) {
+      .background-slide {
+        /* Portrait screens: preserve the image width and scale height proportionally. */
+        background-size: 100% auto;
+      }
     }
 
     .background-slide.is-visible {
@@ -1425,7 +1435,7 @@
           <div class="mantra-text" id="selectedText"></div>
 
           <div class="set-picker" id="setPicker">
-            <h3 class="panel-title">Choose a repetition for Jaap</h3>
+            <h3 class="panel-title">Choose repetitions per Jaap</h3>
             <p class="panel-copy">Select how many times you would like to chant this mantra.</p>
             <div class="set-options">
               <button class="set-option" type="button" data-set-size="11">
@@ -1445,7 +1455,7 @@
 
           <div class="counter-panel hidden" id="counterPanel">
             <div class="counter-heading">
-              Repetition set <strong id="setTarget">11</strong>
+              Jaap target <strong id="setTarget">11</strong>
             </div>
 
             <div class="spinbox" aria-label="Manual repetition counter">
@@ -1482,10 +1492,10 @@
                 Reset to 0
               </button>
               <button class="secondary-button" id="resetSetsButton" type="button">
-                Reset Jaap to 0
+                Reset Jaap count to 0
               </button>
               <button class="secondary-button" id="changeSetButton" type="button">
-                Change Jaap Repetition
+                Change Jaap
               </button>
             </div>
 
@@ -1554,13 +1564,15 @@
     /* ================================================================
        BACKGROUND SLIDESHOW SETTINGS
 
-       Change BACKGROUND_IMAGE_ALPHA to control how faint the wallpapers are.
+       Change BACKGROUND_IMAGE_ALPHA to control wallpaper opacity in Dark mode.
+       Change LIGHT_MODE_BACKGROUND_IMAGE_ALPHA to control it in Light mode.
        0.00 = invisible, 1.00 = fully visible.
 
        Change BACKGROUND_FADE_DURATION_MS to control how slowly one wallpaper
        fades into the next. The value is measured in milliseconds.
        ================================================================ */
     const BACKGROUND_IMAGE_ALPHA = 0.25;
+    const LIGHT_MODE_BACKGROUND_IMAGE_ALPHA = 0.5;
     const BACKGROUND_FADE_DURATION_MS = 3000;
     const SLIDESHOW_INTERVAL_MS = 8000;
 
@@ -2020,7 +2032,7 @@
         const meta = document.createElement("span");
         meta.className = "mantra-card-meta";
         meta.textContent = progress.target
-          ? `${progress.count}/${progress.target} · ${progress.completedSets} ${progress.completedSets === 1 ? "set" : "sets"}`
+          ? `${progress.count}/${progress.target} · ${progress.completedSets} ${progress.completedSets === 1 ? "Jaap" : "Jaaps"}`
           : "Choose a Jaap";
 
         selectButton.append(title, meta);
@@ -2493,8 +2505,12 @@
 
     async function initializeSlideshow() {
       elements.root.style.setProperty(
-        "--background-image-alpha",
+        "--background-image-alpha-dark",
         String(Math.min(1, Math.max(0, BACKGROUND_IMAGE_ALPHA)))
+      );
+      elements.root.style.setProperty(
+        "--background-image-alpha-light",
+        String(Math.min(1, Math.max(0, LIGHT_MODE_BACKGROUND_IMAGE_ALPHA)))
       );
       elements.root.style.setProperty(
         "--background-fade-duration",
