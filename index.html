@@ -243,6 +243,53 @@
       color: var(--heading);
     }
 
+    .sidebar-resize-handle {
+      position: absolute;
+      z-index: 4;
+      top: 50%;
+      right: 0;
+      display: grid;
+      width: 18px;
+      height: 56px;
+      place-items: center;
+      padding: 0;
+      border: 0;
+      border-radius: 10px 0 0 10px;
+      background: color-mix(in srgb, var(--sidebar) 78%, var(--line));
+      color: var(--line-strong);
+      cursor: col-resize;
+      opacity: 0.58;
+      touch-action: none;
+      transform: translateY(-50%);
+      transition: opacity 150ms ease, background-color 150ms ease;
+    }
+
+    .sidebar-resize-handle::before {
+      width: 11px;
+      height: 2px;
+      border-radius: 999px;
+      background: currentColor;
+      box-shadow: 0 -4px 0 currentColor, 0 4px 0 currentColor;
+      content: "";
+    }
+
+    .sidebar-resize-handle:hover,
+    .sidebar-resize-handle:focus-visible,
+    .sidebar-resize-handle.is-dragging {
+      background: color-mix(in srgb, var(--sidebar) 58%, var(--selected));
+      opacity: 1;
+    }
+
+    body.is-resizing-sidebar,
+    body.is-resizing-sidebar * {
+      cursor: col-resize !important;
+      user-select: none !important;
+    }
+
+    body.is-resizing-sidebar .app-shell {
+      transition: none;
+    }
+
     .brand-title {
       overflow: hidden;
       margin: 0;
@@ -626,6 +673,11 @@
       gap: 9px;
     }
 
+    .settings-control {
+      position: relative;
+      z-index: 30;
+    }
+
     .icon-button {
       display: inline-flex;
       min-height: 42px;
@@ -652,6 +704,93 @@
     .icon-button[aria-pressed="true"] {
       border-color: var(--line-strong);
       color: var(--heading);
+    }
+
+    #settingsToggle[aria-expanded="true"] {
+      border-color: var(--line-strong);
+      color: var(--heading);
+    }
+
+    .settings-popover {
+      position: absolute;
+      z-index: 60;
+      top: calc(100% + 11px);
+      right: 0;
+      width: min(310px, calc(100vw - 24px));
+      max-height: min(520px, calc(100vh - 92px));
+      overflow: auto;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      background: var(--surface-solid);
+      color: var(--text);
+      box-shadow: 0 14px 30px rgba(30, 22, 18, 0.15);
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+
+    .settings-popover[hidden] {
+      display: none;
+    }
+
+    .settings-title {
+      margin: 0;
+      color: var(--heading);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 1rem;
+    }
+
+    .settings-description {
+      margin: 5px 0 15px;
+      color: var(--muted);
+      font-size: 0.7rem;
+      line-height: 1.45;
+    }
+
+    .settings-slider {
+      display: block;
+      padding: 11px 0;
+      border-top: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
+    }
+
+    .settings-slider-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 0.74rem;
+      font-weight: 700;
+    }
+
+    .settings-value {
+      min-width: 44px;
+      padding: 3px 6px;
+      border-radius: 6px;
+      background: var(--selected);
+      color: var(--heading);
+      font-size: 0.7rem;
+      font-variant-numeric: tabular-nums;
+      text-align: center;
+    }
+
+    .settings-slider input[type="range"] {
+      width: 100%;
+      margin: 10px 0 2px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .settings-scale {
+      display: flex;
+      justify-content: space-between;
+      color: var(--soft-muted);
+      font-size: 0.62rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .settings-reset-button {
+      width: 100%;
+      min-height: 38px;
+      margin-top: 7px;
     }
 
     .action-icon {
@@ -1095,6 +1234,20 @@
       transform: translateY(0);
     }
 
+    @media (min-width: 721px) and (max-width: 900px) {
+      .topbar-context,
+      .action-label {
+        display: none;
+      }
+
+      .icon-button,
+      #slideshowToggle {
+        width: 42px;
+        min-width: 42px;
+        padding: 8px;
+      }
+    }
+
     @media (max-width: 720px) {
       .app-shell,
       .app-shell.sidebar-collapsed {
@@ -1108,6 +1261,10 @@
         left: 0;
         width: min(325px, 86vw);
         padding: 17px 9px 10px;
+      }
+
+      .sidebar-resize-handle {
+        display: none;
       }
 
       .sidebar-backdrop {
@@ -1217,6 +1374,11 @@
       #slideshowToggle {
         width: 39px;
         min-width: 39px;
+      }
+
+      .settings-popover {
+        width: min(310px, calc(100vw - 16px));
+        max-height: calc(100vh - 74px);
       }
 
       .main-scroll {
@@ -1390,6 +1552,19 @@
       <p class="storage-note">
         Your mantras and progress stay privately in this browser.
       </p>
+
+      <div
+        class="sidebar-resize-handle"
+        id="sidebarResizeHandle"
+        role="separator"
+        tabindex="0"
+        aria-label="Resize mantra sidebar"
+        aria-orientation="vertical"
+        aria-valuemin="230"
+        aria-valuemax="520"
+        aria-valuenow="330"
+        title="Drag to resize the sidebar"
+      ></div>
     </aside>
 
     <button
@@ -1449,6 +1624,70 @@
             <span class="action-icon" id="themeIcon" aria-hidden="true">☾</span>
             <span class="action-label" id="themeLabel">Dark mode</span>
           </button>
+
+          <div class="settings-control" id="settingsControl">
+            <button
+              class="icon-button"
+              id="settingsToggle"
+              type="button"
+              aria-expanded="false"
+              aria-controls="wallpaperSettings"
+              aria-haspopup="dialog"
+              aria-label="Open wallpaper settings"
+              title="Wallpaper settings"
+            >
+              <span class="action-icon" aria-hidden="true">⚙</span>
+              <span class="action-label">Settings</span>
+            </button>
+
+            <section
+              class="settings-popover"
+              id="wallpaperSettings"
+              role="dialog"
+              aria-labelledby="settingsTitle"
+              hidden
+            >
+              <h2 class="settings-title" id="settingsTitle">Wallpaper settings</h2>
+              <p class="settings-description">
+                Changes apply immediately and stay saved on this device.
+              </p>
+
+              <label class="settings-slider" for="edgeFadeSlider">
+                <span class="settings-slider-heading">
+                  <span>Edge fade</span>
+                  <output class="settings-value" id="edgeFadeOutput" for="edgeFadeSlider">12%</output>
+                </span>
+                <input id="edgeFadeSlider" type="range" min="0" max="50" step="1" value="12">
+                <span class="settings-scale" aria-hidden="true"><span>0%</span><span>50%</span></span>
+              </label>
+
+              <label class="settings-slider" for="darkAlphaSlider">
+                <span class="settings-slider-heading">
+                  <span>Dark mode opacity</span>
+                  <output class="settings-value" id="darkAlphaOutput" for="darkAlphaSlider">0.25</output>
+                </span>
+                <input id="darkAlphaSlider" type="range" min="0" max="1" step="0.01" value="0.25">
+                <span class="settings-scale" aria-hidden="true"><span>0.00</span><span>1.00</span></span>
+              </label>
+
+              <label class="settings-slider" for="lightAlphaSlider">
+                <span class="settings-slider-heading">
+                  <span>Light mode opacity</span>
+                  <output class="settings-value" id="lightAlphaOutput" for="lightAlphaSlider">0.60</output>
+                </span>
+                <input id="lightAlphaSlider" type="range" min="0" max="1" step="0.01" value="0.6">
+                <span class="settings-scale" aria-hidden="true"><span>0.00</span><span>1.00</span></span>
+              </label>
+
+              <button
+                class="secondary-button settings-reset-button"
+                id="resetBackgroundSettingsButton"
+                type="button"
+              >
+                Restore defaults
+              </button>
+            </section>
+          </div>
         </div>
       </header>
 
@@ -1603,7 +1842,7 @@
        BACKGROUND SLIDESHOW SETTINGS
 
        Change BACKGROUND_IMAGE_ALPHA to control wallpaper opacity in Dark mode.
-       Change  to control it in Light mode.
+       Change LIGHT_MODE_BACKGROUND_IMAGE_ALPHA to control it in Light mode.
        0.00 = invisible, 1.00 = fully visible.
 
        Change BACKGROUND_EDGE_FADE_PERCENT to control how much of each image
@@ -1613,10 +1852,13 @@
        fades into the next. The value is measured in milliseconds.
        ================================================================ */
     const BACKGROUND_IMAGE_ALPHA = 0.25;
-    const LIGHT_MODE_BACKGROUND_IMAGE_ALPHA = 0.4;
+    const LIGHT_MODE_BACKGROUND_IMAGE_ALPHA = 0.6;
     const BACKGROUND_EDGE_FADE_PERCENT = 12;
     const BACKGROUND_FADE_DURATION_MS = 3000;
     const SLIDESHOW_INTERVAL_MS = 8000;
+    const SIDEBAR_MIN_WIDTH = 230;
+    const SIDEBAR_MAX_WIDTH = 520;
+    const SIDEBAR_KEYBOARD_STEP = 10;
 
     /* GitHub repository settings. These match your current public repository. */
     const DEFAULT_GITHUB_OWNER = "YashConnorJade";
@@ -1647,7 +1889,9 @@
       progress: "smc.progress.v3",
       themeOverride: "smc.theme-override.v1",
       slideshowEnabled: "smc.slideshow-enabled.v1",
-      slideshowCache: "smc.slideshow-image-names.v2"
+      slideshowCache: "smc.slideshow-image-names.v2",
+      backgroundSettings: "smc.background-settings.v1",
+      sidebarWidth: "smc.sidebar-width.v1"
     });
 
     const LEGACY_MANTRA_KEYS = [
@@ -1665,6 +1909,7 @@
       sidebar: document.getElementById("sidebar"),
       sidebarOpenButton: document.getElementById("sidebarOpenButton"),
       sidebarCloseButton: document.getElementById("sidebarCloseButton"),
+      sidebarResizeHandle: document.getElementById("sidebarResizeHandle"),
       sidebarBackdrop: document.getElementById("sidebarBackdrop"),
       mainShell: document.getElementById("mainShell"),
       mantraTotal: document.getElementById("mantraTotal"),
@@ -1690,6 +1935,16 @@
       themeToggle: document.getElementById("themeToggle"),
       themeIcon: document.getElementById("themeIcon"),
       themeLabel: document.getElementById("themeLabel"),
+      settingsControl: document.getElementById("settingsControl"),
+      settingsToggle: document.getElementById("settingsToggle"),
+      wallpaperSettings: document.getElementById("wallpaperSettings"),
+      edgeFadeSlider: document.getElementById("edgeFadeSlider"),
+      edgeFadeOutput: document.getElementById("edgeFadeOutput"),
+      darkAlphaSlider: document.getElementById("darkAlphaSlider"),
+      darkAlphaOutput: document.getElementById("darkAlphaOutput"),
+      lightAlphaSlider: document.getElementById("lightAlphaSlider"),
+      lightAlphaOutput: document.getElementById("lightAlphaOutput"),
+      resetBackgroundSettingsButton: document.getElementById("resetBackgroundSettingsButton"),
       slideshowToggle: document.getElementById("slideshowToggle"),
       slideshowIcon: document.getElementById("slideshowIcon"),
       slideshowLabel: document.getElementById("slideshowLabel"),
@@ -1722,9 +1977,12 @@
     let visibleSlide = "B";
     let slideshowTimer = null;
     let slideshowIsLoading = false;
+    let backgroundSettings = loadBackgroundSettings();
+    let sidebarResizePointerId = null;
 
     normalizeLoadedState();
     initializeSidebar();
+    initializeBackgroundSettings();
     bindEvents();
     initializeTheme();
     initializeSlideshow();
@@ -1736,6 +1994,12 @@
       } catch (_error) {
         return fallback;
       }
+    }
+
+    function clampNumber(value, minimum, maximum, fallback) {
+      const number = Number(value);
+      if (!Number.isFinite(number)) return fallback;
+      return Math.min(maximum, Math.max(minimum, number));
     }
 
     function safeStorageGet(key) {
@@ -1883,6 +2147,34 @@
       return saved !== "false";
     }
 
+    function loadBackgroundSettings() {
+      const saved = safeParse(safeStorageGet(STORAGE_KEYS.backgroundSettings), {});
+      const settings = saved && typeof saved === "object" && !Array.isArray(saved)
+        ? saved
+        : {};
+
+      return {
+        edgeFade: clampNumber(
+          settings.edgeFade,
+          0,
+          50,
+          BACKGROUND_EDGE_FADE_PERCENT
+        ),
+        darkAlpha: clampNumber(
+          settings.darkAlpha,
+          0,
+          1,
+          BACKGROUND_IMAGE_ALPHA
+        ),
+        lightAlpha: clampNumber(
+          settings.lightAlpha,
+          0,
+          1,
+          LIGHT_MODE_BACKGROUND_IMAGE_ALPHA
+        )
+      };
+    }
+
     function normalizeProgress(progress) {
       const target = VALID_SET_SIZES.includes(Number(progress?.target))
         ? Number(progress.target)
@@ -1975,14 +2267,149 @@
       elements.resetSetsButton.addEventListener("click", resetCompletedSets);
       elements.changeSetButton.addEventListener("click", changeRepetitionSet);
       elements.themeToggle.addEventListener("click", toggleTheme);
+      elements.settingsToggle.addEventListener("click", toggleWallpaperSettings);
+      elements.edgeFadeSlider.addEventListener("input", handleBackgroundSettingsInput);
+      elements.darkAlphaSlider.addEventListener("input", handleBackgroundSettingsInput);
+      elements.lightAlphaSlider.addEventListener("input", handleBackgroundSettingsInput);
+      elements.edgeFadeSlider.addEventListener("change", saveBackgroundSettings);
+      elements.darkAlphaSlider.addEventListener("change", saveBackgroundSettings);
+      elements.lightAlphaSlider.addEventListener("change", saveBackgroundSettings);
+      elements.resetBackgroundSettingsButton.addEventListener("click", resetBackgroundSettings);
       elements.slideshowToggle.addEventListener("click", toggleSlideshow);
 
+      elements.sidebarResizeHandle.addEventListener("pointerdown", startSidebarResize);
+      elements.sidebarResizeHandle.addEventListener("pointermove", continueSidebarResize);
+      elements.sidebarResizeHandle.addEventListener("pointerup", finishSidebarResize);
+      elements.sidebarResizeHandle.addEventListener("pointercancel", finishSidebarResize);
+      elements.sidebarResizeHandle.addEventListener("lostpointercapture", finishSidebarResize);
+      elements.sidebarResizeHandle.addEventListener("keydown", handleSidebarResizeKeyboard);
+
       document.addEventListener("keydown", handleKeyboardShortcuts);
+      document.addEventListener("pointerdown", handleDocumentPointerDown);
       document.addEventListener("visibilitychange", handleDocumentVisibility);
+      window.addEventListener("resize", handleWindowResize);
     }
 
     function initializeSidebar() {
+      if (window.innerWidth > 720) {
+        const savedWidth = Number(safeStorageGet(STORAGE_KEYS.sidebarWidth));
+        const currentWidth = elements.sidebar.getBoundingClientRect().width;
+        applySidebarWidth(
+          Number.isFinite(savedWidth) && savedWidth > 0 ? savedWidth : currentWidth,
+          false
+        );
+      }
+
       setSidebarOpen(true, false);
+    }
+
+    function getSidebarMaximumWidth() {
+      return Math.max(
+        SIDEBAR_MIN_WIDTH,
+        Math.min(SIDEBAR_MAX_WIDTH, window.innerWidth - 300)
+      );
+    }
+
+    function applySidebarWidth(width, shouldSave) {
+      const maximum = getSidebarMaximumWidth();
+      const nextWidth = Math.round(
+        clampNumber(width, SIDEBAR_MIN_WIDTH, maximum, SIDEBAR_MIN_WIDTH)
+      );
+
+      elements.appShell.style.setProperty("--sidebar-width", `${nextWidth}px`);
+      elements.sidebarResizeHandle.setAttribute("aria-valuemin", String(SIDEBAR_MIN_WIDTH));
+      elements.sidebarResizeHandle.setAttribute("aria-valuemax", String(maximum));
+      elements.sidebarResizeHandle.setAttribute("aria-valuenow", String(nextWidth));
+
+      if (shouldSave) {
+        safeStorageSet(STORAGE_KEYS.sidebarWidth, String(nextWidth));
+      }
+
+      return nextWidth;
+    }
+
+    function startSidebarResize(event) {
+      if (window.innerWidth <= 720 || event.button !== 0) return;
+
+      event.preventDefault();
+      sidebarResizePointerId = event.pointerId;
+      elements.sidebarResizeHandle.classList.add("is-dragging");
+      document.body.classList.add("is-resizing-sidebar");
+
+      try {
+        elements.sidebarResizeHandle.setPointerCapture(event.pointerId);
+      } catch (_error) {
+        /* Pointer capture is optional; pointer events still resize the sidebar. */
+      }
+
+      applySidebarWidth(event.clientX, false);
+    }
+
+    function continueSidebarResize(event) {
+      if (sidebarResizePointerId === null || event.pointerId !== sidebarResizePointerId) return;
+      applySidebarWidth(event.clientX, false);
+    }
+
+    function finishSidebarResize(event) {
+      if (sidebarResizePointerId === null) return;
+      if (event.pointerId !== undefined && event.pointerId !== sidebarResizePointerId) return;
+
+      const pointerId = sidebarResizePointerId;
+      sidebarResizePointerId = null;
+      elements.sidebarResizeHandle.classList.remove("is-dragging");
+      document.body.classList.remove("is-resizing-sidebar");
+
+      if (window.innerWidth > 720) {
+        const finalWidth = elements.sidebar.getBoundingClientRect().width;
+        applySidebarWidth(finalWidth, true);
+      }
+
+      try {
+        if (elements.sidebarResizeHandle.hasPointerCapture(pointerId)) {
+          elements.sidebarResizeHandle.releasePointerCapture(pointerId);
+        }
+      } catch (_error) {
+        /* The pointer may already have been released by the browser. */
+      }
+    }
+
+    function handleSidebarResizeKeyboard(event) {
+      if (window.innerWidth <= 720) return;
+
+      const currentWidth = elements.sidebar.getBoundingClientRect().width;
+      let nextWidth = currentWidth;
+
+      if (event.key === "ArrowLeft") {
+        nextWidth -= SIDEBAR_KEYBOARD_STEP;
+      } else if (event.key === "ArrowRight") {
+        nextWidth += SIDEBAR_KEYBOARD_STEP;
+      } else if (event.key === "Home") {
+        nextWidth = SIDEBAR_MIN_WIDTH;
+      } else if (event.key === "End") {
+        nextWidth = getSidebarMaximumWidth();
+      } else {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      applySidebarWidth(nextWidth, true);
+    }
+
+    function handleWindowResize() {
+      if (window.innerWidth <= 720) {
+        if (sidebarResizePointerId !== null) {
+          finishSidebarResize({ pointerId: sidebarResizePointerId });
+        }
+        return;
+      }
+
+      const savedWidth = Number(safeStorageGet(STORAGE_KEYS.sidebarWidth));
+      const currentWidth = elements.sidebar.getBoundingClientRect().width;
+      applySidebarWidth(
+        Number.isFinite(savedWidth) && savedWidth > 0 ? savedWidth : currentWidth,
+        false
+      );
     }
 
     function isSidebarOpen() {
@@ -2291,6 +2718,12 @@
     }
 
     function handleKeyboardShortcuts(event) {
+      if (event.key === "Escape" && isWallpaperSettingsOpen()) {
+        event.preventDefault();
+        setWallpaperSettingsOpen(false, true);
+        return;
+      }
+
       if (event.key === "Escape" && !elements.mantraModal.hidden) {
         event.preventDefault();
         closeMantraModal();
@@ -2428,6 +2861,137 @@
       }, 2200);
     }
 
+    function initializeBackgroundSettings() {
+      applyBackgroundSettings();
+      syncBackgroundSettingsControls();
+    }
+
+    function applyBackgroundSettings() {
+      elements.root.style.setProperty(
+        "--background-image-alpha-dark",
+        String(backgroundSettings.darkAlpha)
+      );
+      elements.root.style.setProperty(
+        "--background-image-alpha-light",
+        String(backgroundSettings.lightAlpha)
+      );
+      elements.root.style.setProperty(
+        "--background-edge-fade",
+        `${backgroundSettings.edgeFade}%`
+      );
+    }
+
+    function syncBackgroundSettingsControls() {
+      elements.edgeFadeSlider.value = String(backgroundSettings.edgeFade);
+      elements.darkAlphaSlider.value = String(backgroundSettings.darkAlpha);
+      elements.lightAlphaSlider.value = String(backgroundSettings.lightAlpha);
+
+      elements.edgeFadeOutput.textContent = `${Math.round(backgroundSettings.edgeFade)}%`;
+      elements.darkAlphaOutput.textContent = backgroundSettings.darkAlpha.toFixed(2);
+      elements.lightAlphaOutput.textContent = backgroundSettings.lightAlpha.toFixed(2);
+
+      elements.edgeFadeSlider.setAttribute(
+        "aria-valuetext",
+        `${Math.round(backgroundSettings.edgeFade)} percent`
+      );
+      elements.darkAlphaSlider.setAttribute(
+        "aria-valuetext",
+        backgroundSettings.darkAlpha.toFixed(2)
+      );
+      elements.lightAlphaSlider.setAttribute(
+        "aria-valuetext",
+        backgroundSettings.lightAlpha.toFixed(2)
+      );
+    }
+
+    function readBackgroundSettingsControls() {
+      return {
+        edgeFade: clampNumber(
+          elements.edgeFadeSlider.value,
+          0,
+          50,
+          BACKGROUND_EDGE_FADE_PERCENT
+        ),
+        darkAlpha: clampNumber(
+          elements.darkAlphaSlider.value,
+          0,
+          1,
+          BACKGROUND_IMAGE_ALPHA
+        ),
+        lightAlpha: clampNumber(
+          elements.lightAlphaSlider.value,
+          0,
+          1,
+          LIGHT_MODE_BACKGROUND_IMAGE_ALPHA
+        )
+      };
+    }
+
+    function handleBackgroundSettingsInput() {
+      backgroundSettings = readBackgroundSettingsControls();
+      applyBackgroundSettings();
+      syncBackgroundSettingsControls();
+    }
+
+    function saveBackgroundSettings() {
+      backgroundSettings = readBackgroundSettingsControls();
+      applyBackgroundSettings();
+      syncBackgroundSettingsControls();
+      safeStorageSet(
+        STORAGE_KEYS.backgroundSettings,
+        JSON.stringify(backgroundSettings)
+      );
+    }
+
+    function resetBackgroundSettings() {
+      backgroundSettings = {
+        edgeFade: BACKGROUND_EDGE_FADE_PERCENT,
+        darkAlpha: BACKGROUND_IMAGE_ALPHA,
+        lightAlpha: LIGHT_MODE_BACKGROUND_IMAGE_ALPHA
+      };
+      applyBackgroundSettings();
+      syncBackgroundSettingsControls();
+      safeStorageSet(
+        STORAGE_KEYS.backgroundSettings,
+        JSON.stringify(backgroundSettings)
+      );
+    }
+
+    function isWallpaperSettingsOpen() {
+      return !elements.wallpaperSettings.hidden;
+    }
+
+    function setWallpaperSettingsOpen(isOpen, moveFocus) {
+      elements.wallpaperSettings.hidden = !isOpen;
+      elements.settingsToggle.setAttribute("aria-expanded", String(isOpen));
+      elements.settingsToggle.setAttribute(
+        "aria-label",
+        isOpen ? "Close wallpaper settings" : "Open wallpaper settings"
+      );
+
+      if (!moveFocus) return;
+
+      window.requestAnimationFrame(() => {
+        const focusTarget = isOpen
+          ? elements.edgeFadeSlider
+          : elements.settingsToggle;
+        focusTarget.focus({ preventScroll: true });
+      });
+    }
+
+    function toggleWallpaperSettings() {
+      setWallpaperSettingsOpen(!isWallpaperSettingsOpen(), false);
+    }
+
+    function handleDocumentPointerDown(event) {
+      if (
+        isWallpaperSettingsOpen() &&
+        !elements.settingsControl.contains(event.target)
+      ) {
+        setWallpaperSettingsOpen(false, false);
+      }
+    }
+
     function getSystemTheme() {
       if (!window.matchMedia) return "light";
       return window.matchMedia("(prefers-color-scheme: dark)").matches
@@ -2546,18 +3110,7 @@
     }
 
     async function initializeSlideshow() {
-      elements.root.style.setProperty(
-        "--background-image-alpha-dark",
-        String(Math.min(1, Math.max(0, BACKGROUND_IMAGE_ALPHA)))
-      );
-      elements.root.style.setProperty(
-        "--background-image-alpha-light",
-        String(Math.min(1, Math.max(0, LIGHT_MODE_BACKGROUND_IMAGE_ALPHA)))
-      );
-      elements.root.style.setProperty(
-        "--background-edge-fade",
-        `${Math.min(50, Math.max(0, BACKGROUND_EDGE_FADE_PERCENT))}%`
-      );
+      applyBackgroundSettings();
       elements.root.style.setProperty(
         "--background-fade-duration",
         `${Math.max(0, BACKGROUND_FADE_DURATION_MS)}ms`
